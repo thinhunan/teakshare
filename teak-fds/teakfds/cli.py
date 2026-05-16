@@ -951,7 +951,8 @@ def create_parser() -> argparse.ArgumentParser:
         """
     )
 
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0.0')
+    from teakfds import __version__
+    parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {__version__}')
 
     subparsers = parser.add_subparsers(dest='command', help='可用命令')
 

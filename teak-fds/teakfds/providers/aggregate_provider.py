@@ -12,7 +12,11 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from teakfds.datasource_log import log_error
-from teakfds.integrations.cninfo_rating import fetch_rating_forecast_cninfo
+from teakfds.integrations.cninfo_rating import (
+    fetch_rating_cninfo_for_code,
+    fetch_rating_forecast_cninfo,
+)
+from teakfds.integrations.eastmoney_report import fetch_stock_report_ratings
 from teakfds.integrations.eastmoney_comment import fetch_institution_participation_em
 from teakfds.integrations.eastmoney_forecast import fetch_profit_forecast_em
 from teakfds.integrations.eastmoney_gsrl import fetch_company_events_em
@@ -123,19 +127,26 @@ class AggregateProvider(BaseProvider):
 
     def rating_summary(self, symbol: str) -> Optional[List[Dict]]:
         self._wait_rate_limit()
+        if symbol:
+            em_rows = fetch_stock_report_ratings(symbol, max_pages=2)
+            if em_rows:
+                return em_rows
+            code = _fds_to_code(symbol)
+            cn_rows = fetch_rating_cninfo_for_code(code)
+            if cn_rows:
+                return cn_rows
+            return None
         date = datetime.now().strftime("%Y%m%d")
         result = fetch_rating_forecast_cninfo(date)
-        if not result:
-            return None
-        if symbol:
-            code = _fds_to_code(symbol)
-            filtered = [
-                r
-                for r in result
-                if code in str(r.get("证券代码", "")) or code in str(r.values())
-            ]
-            return filtered if filtered else result
-        return result
+        if result:
+            return result
+        from teakfds.integrations.cninfo_rating import _recent_trade_dates
+
+        for day in _recent_trade_dates(8)[1:]:
+            result = fetch_rating_forecast_cninfo(day)
+            if result:
+                return result
+        return None
 
     def institution_recommend(self, symbol: str) -> Optional[Dict]:
         self._wait_rate_limit()

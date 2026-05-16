@@ -26,7 +26,7 @@ pip install -e ~/.openclaw/skills/teak-fds
 # 推荐凭证（缺则部分接口 skip/降级，不阻塞行情）
 # ~/agents_documents/TUSHARE_TOKEN.txt
 # ~/agents_documents/MX_APIKEY.txt
-# teakfds/providers/lixinger/settings.json + cookie.txt
+# teakfds/providers/lixinger/settings.json + cookie.txt（仅技能内目录，勿指向 finance-data-source）
 ```
 
 **禁止**依赖 `PYTHONPATH`；应使用 `pip install -e .` 后的全局 `teakfds` 包。
@@ -195,10 +195,10 @@ teakfds health
 | 接口 | 原因 |
 |------|------|
 | `pe_percentile` / `valuation_percentiles` | 需理杏仁 cookie 有效 |
-| `concept_blocks` | 百度 PAE 可能返回 `ResultCode=10003`（接口策略变化） |
-| `industry_comparison` | 东财 `17.push2.eastmoney.com` 偶发断连 |
-| `fund_flow_baidu` | 百度个股资金流 API 变更或限流 |
-| `report_rating` | 巨潮评级接口偶发空 |
+| `concept_blocks` | 百度失败时走 Tushare；需 Token |
+| `industry_comparison` | push2 失败时走 `moneyflow_ind_ths`；需 Token |
+| `fund_flow_baidu` | 百度 API 变更时可能为空 |
+| `report_rating` | 单股走东财研报；全市场走巨潮按日列表 |
 | `consensus_eps` | 同花顺 worth 页；建议 `pip install -e ".[analytics]"` |
 | `iwencai` | 需本机 Node + pywencai 环境 |
 

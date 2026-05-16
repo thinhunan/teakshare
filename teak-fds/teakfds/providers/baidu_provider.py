@@ -170,8 +170,9 @@ class BaiduProvider(BaseProvider):
         if str(d.get("ResultCode", -1)) != "0":
             return None
 
+        result = d.get("Result") or {}
         rows = []
-        for item in d.get("Result", {}).get("list", []):
+        for item in result.get("list", []) or []:
             rows.append({
                 "date": item.get("showtime", ""),
                 "close": item.get("closepx", ""),

@@ -3,7 +3,7 @@
 LixingerProvider - 理杏仁估值数据Provider (完整版)
 P0级别 - 估值数据主源
 
-依赖：仅 Cookie（`scripts/providers/lixinger/` 下配置与 cookie 文件）；爬虫内置失效后自动模拟登录更新 Cookie。
+依赖：仅 `teakfds/providers/lixinger/` 下 `settings.json` 与 `cookie.txt`；爬虫内置失效后自动模拟登录更新 Cookie。
 若接口持续不可用，视为实现缺陷（非「缺第三方 Token」场景）。
 
 完整拷贝自 lixinger-data-query skill，包含：
@@ -13,7 +13,7 @@ P0级别 - 估值数据主源
 """
 
 from pathlib import Path
-from typing import Optional, Dict, Any, Literal, Tuple
+from typing import List, Optional, Dict, Any, Literal, Tuple
 
 from datetime import datetime
 
@@ -47,6 +47,25 @@ class LixingerProvider(BaseProvider):
     
     # 默认数据目录
     DEFAULT_DATA_DIR = Path.home() / 'agents_documents' / 'lixinger_crawl'
+
+    @staticmethod
+    def _resolve_lixinger_paths() -> Tuple[Path, Path]:
+        """仅使用本包内 ``teakfds/providers/lixinger/``（不依赖 finance-data-source 等外部目录）。"""
+        lixinger_dir = Path(__file__).parent / 'lixinger'
+        settings_path = lixinger_dir / 'settings.json'
+        if not settings_path.is_file():
+            example = lixinger_dir / 'settings.example.json'
+            if example.is_file():
+                raise FileNotFoundError(
+                    f"缺少 {settings_path}；请从 settings.example.json 复制并填写账号，"
+                    "见 references/config.md"
+                )
+        return settings_path, lixinger_dir / 'cookie.txt'
+
+    def _reset_spider(self) -> None:
+        self._spider = None
+        self._available = None
+        self._last_error = None
     
     def __init__(self):
         super().__init__()
@@ -60,14 +79,7 @@ class LixingerProvider(BaseProvider):
             return self._spider
         
         try:
-            # 使用拷贝的配置文件路径
-            lixinger_dir = Path(__file__).parent / 'lixinger'
-            settings_path = lixinger_dir / 'settings.json'
-            if not settings_path.exists():
-                alt = lixinger_dir / 'settings.example.json'
-                if alt.exists():
-                    settings_path = alt
-            cookie_path = lixinger_dir / 'cookie.txt'
+            settings_path, cookie_path = self._resolve_lixinger_paths()
             db_path = self.DEFAULT_DATA_DIR / 'db' / 'lixinger.db'
             
             # 确保数据目录存在
@@ -332,11 +344,11 @@ class LixingerProvider(BaseProvider):
             ``current``, ``percentile``(历史分位 0-100), ``percentile_20``/``50``/``80``,
             ``max``, ``min``, ``avg``；无统计对象时各分位字段可为 None。
         """
-        if not self.is_available():
-            return None
-
         try:
             spider = self._ensure_spider()
+            if spider is None:
+                self._reset_spider()
+                spider = self._ensure_spider()
             if spider is None:
                 return None
 
@@ -374,10 +386,11 @@ class LixingerProvider(BaseProvider):
             ``pe_ttm``, ``pb``, ``ps_ttm``, ``dyr`` 各为与 ``get_percentile`` 相同结构的 dict；
             另含 ``granularity``、``symbol``。
         """
-        if not self.is_available():
-            return None
         try:
             spider = self._ensure_spider()
+            if spider is None:
+                self._reset_spider()
+                spider = self._ensure_spider()
             if spider is None:
                 return None
             code = self._normalize_code(symbol)

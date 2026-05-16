@@ -2352,7 +2352,7 @@ class FinanceDataSource:
         return None
 
     def concept_blocks(self, symbol: str) -> Optional[Dict]:
-        """个股所属概念/行业/地域板块（百度股市通）
+        """个股所属概念/行业/地域板块（百度 → Tushare concept_detail）
 
         Returns:
             {industry: [...], concept: [...], region: [...], concept_tags: [str, ...]}
@@ -2361,9 +2361,19 @@ class FinanceDataSource:
         provider = self.get_provider('baidu')
         if provider:
             try:
-                return provider.concept_blocks(symbol)
+                result = provider.concept_blocks(symbol)
+                if result and (
+                    result.get("industry") or result.get("concept") or result.get("concept_tags")
+                ):
+                    return result
             except Exception as e:
                 log_error(f"FinanceDataSource.concept_blocks error: {e}")
+        try:
+            from teakfds.integrations.tushare_concept import fetch_concept_blocks_tushare
+
+            return fetch_concept_blocks_tushare(symbol, self.tushare)
+        except Exception as e:
+            log_error(f"FinanceDataSource.concept_blocks tushare fallback: {e}")
         return None
 
     def daily_dragon_tiger(self, trade_date: str = None, min_net_buy: float = None) -> Optional[Dict]:

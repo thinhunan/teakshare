@@ -768,7 +768,7 @@ class TushareProvider(BaseProvider):
         Returns:
             IncomeData 或 None
         """
-        from adapters.financial_adapter import FinancialAdapter
+        from teakfds.adapters.financial_adapter import FinancialAdapter
 
         if not self.pro:
             return None
@@ -800,7 +800,7 @@ class TushareProvider(BaseProvider):
         Returns:
             BalanceData 或 None
         """
-        from adapters.financial_adapter import FinancialAdapter
+        from teakfds.adapters.financial_adapter import FinancialAdapter
 
         if not self.pro:
             return None
@@ -832,7 +832,7 @@ class TushareProvider(BaseProvider):
         Returns:
             CashFlowData 或 None
         """
-        from adapters.financial_adapter import FinancialAdapter
+        from teakfds.adapters.financial_adapter import FinancialAdapter
 
         if not self.pro:
             return None

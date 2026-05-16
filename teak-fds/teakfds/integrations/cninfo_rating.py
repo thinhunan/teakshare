@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import time
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -29,9 +30,38 @@ def _cninfo_accept_enckey() -> Optional[str]:
     return base64.b64encode(ct).decode("ascii")
 
 
+def _normalize_cninfo_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """巨潮 p_sysapi1089 字段（SECCODE/F004V 等）→ 统一中文键。"""
+    return {
+        "证券代码": row.get("SECCODE") or row.get("zqdm") or row.get("SEC_CODE"),
+        "证券简称": row.get("SECNAME") or row.get("zqjc") or row.get("SEC_NAME"),
+        "发布日期": row.get("DECLAREDATE") or row.get("fbrq") or row.get("PUBLISH_DATE"),
+        "研究机构简称": row.get("F002V") or row.get("orgname") or row.get("ORG_NAME"),
+        "研究员名称": row.get("F003V") or row.get("author") or row.get("AUTHOR"),
+        "投资评级": row.get("F004V") or row.get("rating") or row.get("RATING"),
+        "是否首次评级": row.get("F006V") or row.get("sfsqpj"),
+        "评级变化": row.get("F007V") or row.get("ratingchg"),
+        "前一次投资评级": row.get("F008V") or row.get("prerating"),
+        "目标价格-下限": row.get("F009N") or row.get("mbjxx"),
+        "目标价格-上限": row.get("F010N") or row.get("mbjsx"),
+        "source": "cninfo",
+    }
+
+
+def _recent_trade_dates(max_days: int = 12) -> List[str]:
+    """最近若干工作日 YYYYMMDD（不含周末）。"""
+    out: List[str] = []
+    d = datetime.now()
+    while len(out) < max_days:
+        if d.weekday() < 5:
+            out.append(d.strftime("%Y%m%d"))
+        d -= timedelta(days=1)
+    return out
+
+
 def fetch_rating_forecast_cninfo(date: str) -> Optional[List[Dict[str, Any]]]:
     """
-    巨潮投资评级列表。
+    巨潮投资评级列表（指定交易日全市场）。
 
     Args:
         date: YYYYMMDD
@@ -64,21 +94,26 @@ def fetch_rating_forecast_cninfo(date: str) -> Optional[List[Dict[str, Any]]]:
         return None
     if not records:
         return None
-    out: List[Dict[str, Any]] = []
-    for row in records:
-        out.append(
-            {
-                "证券代码": row.get("zqdm") or row.get("SEC_CODE"),
-                "证券简称": row.get("zqjc") or row.get("SEC_NAME"),
-                "发布日期": row.get("fbrq") or row.get("PUBLISH_DATE"),
-                "研究机构简称": row.get("orgname") or row.get("ORG_NAME"),
-                "研究员名称": row.get("author") or row.get("AUTHOR"),
-                "投资评级": row.get("rating") or row.get("RATING"),
-                "是否首次评级": row.get("sfsqpj"),
-                "评级变化": row.get("ratingchg"),
-                "前一次投资评级": row.get("prerating"),
-                "目标价格-下限": row.get("mbjxx"),
-                "目标价格-上限": row.get("mbjsx"),
-            }
-        )
-    return out
+    return [_normalize_cninfo_row(row) for row in records]
+
+
+def fetch_rating_cninfo_for_code(
+    code: str, max_days: int = 10
+) -> Optional[List[Dict[str, Any]]]:
+    """按股票代码在最近交易日巨潮评级列表中筛选。"""
+    code = (code or "").strip()
+    if not code:
+        return None
+    for day in _recent_trade_dates(max_days):
+        rows = fetch_rating_forecast_cninfo(day)
+        if not rows:
+            continue
+        matched = [
+            r
+            for r in rows
+            if code in str(r.get("证券代码") or "")
+            or code in str(r.get("证券简称") or "")
+        ]
+        if matched:
+            return matched
+    return None

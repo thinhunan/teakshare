@@ -51,7 +51,16 @@ pip install -e ".[dev]"         # pytest
 
 ## 凭证文件
 
-路径与说明见 [config.md](config.md)。无 Token 时：行情/部分东财接口仍可用；Tushare/妙想/理杏仁/雪球按接口降级或返回 `None`。
+路径与说明见 [config.md](config.md)。**全部落在本技能或 `~/agents_documents/`**，不读取 `finance-data-source` / `akshare` 目录。
+
+理杏仁（方式 A，推荐）：
+
+```bash
+cp /path/to/your/settings.json ~/.openclaw/skills/teak-fds/teakfds/providers/lixinger/
+# 或从 settings.example.json 复制后填写账号；cookie.txt 可留空，首次请求自动登录生成
+```
+
+无 Token 时：行情/部分东财接口仍可用；Tushare/妙想/理杏仁/雪球按接口降级或返回 `None`。
 
 ## 自检
 

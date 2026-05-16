@@ -76,6 +76,24 @@ def test_announcement_list_dict_keys():
 
 
 @pytest.mark.integration
+def test_report_rating_has_rating_field():
+    from teakfds import TeakFDS
+
+    rows = TeakFDS().report_rating("SH600519")
+    assert rows
+    assert rows[0].get("投资评级") or rows[0].get("title")
+
+
+@pytest.mark.integration
+def test_concept_blocks_tushare_fallback():
+    from teakfds import TeakFDS
+
+    d = TeakFDS().concept_blocks("SH600519")
+    assert d
+    assert d.get("concept") or d.get("industry")
+
+
+@pytest.mark.integration
 def test_industry_comparison_structure():
     from teakfds import TeakFDS
 

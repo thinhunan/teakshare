@@ -1,6 +1,6 @@
 # 配置与凭证
 
-与 `finance-data-source` 保持同一套路径约定，**实现代码未改 token/cookie 解析逻辑**。
+Teak-FDS **自包含**，凭证与配置文件均放在本技能目录或 `~/agents_documents/`，**不依赖** `finance-data-source` 或 `akshare` 仓库路径。
 
 ## Tushare
 
@@ -24,13 +24,25 @@
 
 ## 理杏仁
 
-- 目录：`teakfds/providers/lixinger/`
-- `settings.json`：从 `settings.example.json` 复制，填写真实 `accountName` / `password`（JSON 内 `body` 字段）
-- `cookie.txt`：可留空，由爬虫在登录成功后写入；若只做只读且已有 cookie，可直接放置有效内容
+**唯一配置目录**：`teakfds/providers/lixinger/`（技能内，已 gitignore 敏感文件）
+
+| 文件 | 说明 |
+|------|------|
+| `settings.json` | 从 `settings.example.json` 复制并填写 `accountName` / `password`（勿提交 git） |
+| `cookie.txt` | 可留空；登录成功后自动写入；失效后自动重新登录 |
+
+失效后爬虫会 **自动登录并写回 cookie**；API 认证失败时 **重新登录并重试一次**（`lixinger_spider._request`）。
+
+**首次从旧环境迁移（一次性）**：
+
+```bash
+cp /path/to/old/lixinger/settings.json ~/.openclaw/skills/teak-fds/teakfds/providers/lixinger/
+# cookie.txt 可选，留空则会自动登录生成
+```
 
 数据缓存目录默认：`~/agents_documents/lixinger_crawl/db/`（SQLite）。
 
-实现：`teakfds/providers/lixinger/lixinger_spider.py`（自动登录）、`lixinger_provider.py`。
+实现：`teakfds/providers/lixinger/lixinger_spider.py`、`lixinger_provider.py`。
 
 ## Qlib（可选）
 
