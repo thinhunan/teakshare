@@ -28,6 +28,7 @@ from teakfds.normalize_finance import (
     dividend_yield_decimal,
     filter_dividend_rows,
     normalize_consensus_eps_rows,
+    normalize_dividend_rows,
     normalize_money_flow_rows,
 )
 
@@ -1058,8 +1059,11 @@ class FinanceDataSource:
             except Exception as e:
                 log_error(f"FinanceDataSource.xdxr tdx error: {e}")
 
-        # 回退: tushare dividend
-        return self.dividend(symbol)
+        # 回退: tushare dividend（含 amount 字段）
+        fallback = self.dividend(symbol)
+        if fallback:
+            self.cache.set(cache_key, fallback, data_type='xdxr', ttl=self.CACHE_TTL['xdxr'])
+        return fallback
 
     # ========== 研报 API ==========
 
@@ -2052,24 +2056,28 @@ class FinanceDataSource:
             return normalized[2:] + '.' + normalized[:2]
         return symbol
 
-    def dividend(self, symbol: str) -> Optional[List[Dict]]:
-        """获取分红送股数据 (Tushare)
+    def dividend(self, symbol: str, limit: int = 20) -> Optional[List[Dict]]:
+        """获取分红送股数据 (Tushare dividend)
 
         Args:
             symbol: 股票代码
+            limit: 最多返回条数（按报告期倒序）
 
         Returns:
-            list[dict]: 仅含 cash_div>0 或 stk_div>0 的有效分红记录
+            list[dict]: 有效分红记录；含 amount/div_amount（每股现金分红，元）、cash_div、stk_div
         """
         symbol = self._resolve_symbol(symbol)
         provider = self.get_provider('tushare')
         if not provider:
             return None
         try:
-            ts_code = provider.normalize_code(symbol)
-            raw = provider.pro_call('dividend', ts_code=ts_code)
-            rows = coerce_tushare_table(raw)
-            return filter_dividend_rows(rows)
+            if hasattr(provider, "dividend"):
+                rows = provider.dividend(symbol)
+            else:
+                ts_code = provider.normalize_code(symbol)
+                raw = provider.pro_call("dividend", ts_code=ts_code)
+                rows = filter_dividend_rows(coerce_tushare_table(raw))
+            return normalize_dividend_rows(rows, source="tushare", limit=limit)
         except Exception as e:
             log_error(f"FinanceDataSource.dividend error: {e}")
         return None

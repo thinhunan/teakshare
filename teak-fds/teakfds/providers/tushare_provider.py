@@ -912,6 +912,16 @@ class TushareProvider(BaseProvider):
             print(f"TushareProvider.valuation error: {e}")
             return None
 
+    def dividend(self, symbol: str) -> Optional[List[Dict]]:
+        """分红送股（Tushare dividend 接口，list[dict]，含 amount 字段）。"""
+        from teakfds.normalize_finance import filter_dividend_rows, normalize_dividend_rows
+        from teakfds.tushare_table import coerce_tushare_table
+
+        ts_code = self.normalize_code(symbol)
+        raw = self.pro_call("dividend", ts_code=ts_code)
+        rows = filter_dividend_rows(coerce_tushare_table(raw))
+        return normalize_dividend_rows(rows, source=self.name)
+
     def money_flow(self, symbol: str, days: int = 30):
         """获取资金流向 - 统一接口（list[dict]，含 main_net）"""
         from teakfds.normalize_finance import normalize_money_flow_rows

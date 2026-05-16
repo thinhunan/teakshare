@@ -4,6 +4,7 @@ from teakfds.normalize_finance import (
     dividend_yield_decimal,
     filter_dividend_rows,
     normalize_consensus_eps_rows,
+    normalize_dividend_rows,
     normalize_money_flow_rows,
 )
 
@@ -11,6 +12,13 @@ from teakfds.normalize_finance import (
 def test_dividend_yield_decimal():
     assert dividend_yield_decimal(1.8545) == 0.018545
     assert dividend_yield_decimal(0.0185) == 0.0185
+
+
+def test_normalize_dividend_amount_alias():
+    rows = [{"end_date": "20251231", "div_proc": "实施", "cash_div": 6.957}]
+    out = normalize_dividend_rows(rows)
+    assert out[0]["amount"] == 6.957
+    assert out[0]["div_amount"] == 6.957
 
 
 def test_filter_dividend_rows():

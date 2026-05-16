@@ -371,12 +371,13 @@ class FDSCommands:
             return 0
 
         CLIOutput.print_header(f"{symbol} 分红送股")
-        headers = ["报告期", "公告日", "进度", "每股分红", "送股"]
+        headers = ["报告期", "公告日", "进度", "amount", "cash_div", "送股"]
         rows = [
             [
                 d.get("end_date"),
                 d.get("ann_date"),
                 d.get("div_proc"),
+                d.get("amount", d.get("div_amount")),
                 d.get("cash_div"),
                 d.get("stk_div"),
             ]

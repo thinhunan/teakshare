@@ -95,13 +95,25 @@ def consensus_eps_has_signal(rows: Optional[List[Dict[str, Any]]]) -> bool:
     return False
 
 
+def effective_cash_div(row: Row) -> float:
+    """
+    每股现金分红（元）。Tushare dividend 接口字段为 cash_div / cash_div_tax，
+    部分调用方误读 amount / div_amount。
+    """
+    for key in ("cash_div", "cash_div_tax", "div_amount", "amount"):
+        v = safe_optional_float(row, key)
+        if v is not None and v > 0:
+            return v
+    return 0.0
+
+
 def filter_dividend_rows(rows: Optional[List[Row]]) -> Optional[List[Row]]:
-    """过滤无实际分红记录（cash_div/stk_div 均为 0）。"""
+    """过滤无实际分红记录（现金分红或送转均为 0）。"""
     if not rows:
         return None
     kept: List[Row] = []
     for r in rows:
-        cash = safe_float(r, "cash_div", 0.0)
+        cash = effective_cash_div(r)
         stk = safe_float(r, "stk_div", 0.0)
         if cash > 0 or stk > 0:
             kept.append(dict(r))
@@ -120,10 +132,45 @@ def filter_dividend_rows(rows: Optional[List[Row]]) -> Optional[List[Row]]:
         if proc == "实施" and prev_proc != "实施":
             by_period[key] = r
         elif proc == "实施" and prev_proc == "实施":
-            if safe_float(r, "cash_div", 0) > safe_float(prev, "cash_div", 0):
+            if effective_cash_div(r) > effective_cash_div(prev):
                 by_period[key] = r
     ordered = sorted(by_period.values(), key=lambda x: str(x.get("end_date") or ""), reverse=True)
     return ordered
+
+
+def normalize_dividend_rows(
+    rows: Optional[List[Row]], source: str = "tushare", limit: Optional[int] = None
+) -> Optional[List[Dict[str, Any]]]:
+    """
+    统一分红记录字段：补充 amount / div_amount（每股现金分红，元）及 year。
+    """
+    if not rows:
+        return None
+    out: List[Dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        amount = effective_cash_div(r)
+        stk = safe_float(r, "stk_div", 0.0)
+        end_date = str(r.get("end_date") or r.get("date") or "")
+        year = end_date[:4] if len(end_date) >= 4 else ""
+        item = dict(r)
+        item.update(
+            {
+                "amount": amount,
+                "div_amount": amount,
+                "cash_div": amount if amount > 0 else safe_float(r, "cash_div", 0.0),
+                "stk_div": stk,
+                "year": year or item.get("year"),
+                "period": end_date or item.get("period"),
+                "ex_date": item.get("ex_date") or item.get("date"),
+                "source": source or item.get("source", ""),
+            }
+        )
+        out.append(item)
+    if limit and len(out) > limit:
+        out = out[:limit]
+    return out or None
 
 
 def normalize_money_flow_rows(
