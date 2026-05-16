@@ -147,7 +147,10 @@ def build_cases(quick: bool, category: Optional[str] = None) -> List[Dict[str, A
         case("price_metric_percentile", "单指标分位", lambda: fds.price_metric_percentile(SYMBOL, "pe_ttm", 5),
              lambda d: d is None or isinstance(d, dict), "valuation", optional=True),
         case("dividend", "分红", lambda: fds.dividend(SYMBOL),
-             lambda d: d is None or isinstance(d, list), "valuation", optional=True),
+             lambda d: d is None or (
+                 isinstance(d, list)
+                 and (not d or float(d[0].get("amount") or d[0].get("cash_div") or 0) > 0)
+             ), "valuation"),
         case("consensus_eps", "一致预期EPS", lambda: fds.consensus_eps(SYMBOL),
              lambda d: d is None or _is_list_dict(d, 0), "valuation"),
         # --- 财务 ---

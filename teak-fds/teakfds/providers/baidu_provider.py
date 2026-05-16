@@ -152,7 +152,14 @@ class BaiduProvider(BaseProvider):
     # ========== 个股资金流向 (日级历史) ==========
 
     def fund_flow_history(self, symbol: str, days: int = 20) -> Optional[List[Dict]]:
-        """日级资金流向（最近 N 交易日）。"""
+        """日级资金流向（最近 N 交易日）；东财为主，百度 fundsortlist 已失效。"""
+        from teakfds.integrations.eastmoney_fund_flow import fetch_stock_fund_flow_em
+        from teakfds.normalize_finance import normalize_money_flow_rows
+
+        rows = fetch_stock_fund_flow_em(symbol, days=days)
+        if rows:
+            return normalize_money_flow_rows(rows, source="eastmoney", days=days)
+
         import requests
 
         code = _strip_prefix(symbol)
@@ -171,9 +178,9 @@ class BaiduProvider(BaseProvider):
             return None
 
         result = d.get("Result") or {}
-        rows = []
+        legacy: List[Dict] = []
         for item in result.get("list", []) or []:
-            rows.append({
+            legacy.append({
                 "date": item.get("showtime", ""),
                 "close": item.get("closepx", ""),
                 "change_pct": item.get("ratio", ""),
@@ -183,7 +190,7 @@ class BaiduProvider(BaseProvider):
                 "littleNetIn": item.get("littleNetIn", ""),
                 "mainIn": item.get("extMainIn", ""),
             })
-        return rows
+        return normalize_money_flow_rows(legacy, source=self.name, days=days) if legacy else None
 
     # ========== BaseProvider 标准接口适配 ==========
 

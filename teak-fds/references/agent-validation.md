@@ -31,6 +31,17 @@ pip install -e ~/.openclaw/skills/teak-fds
 
 **禁止**依赖 `PYTHONPATH`；应使用 `pip install -e .` 后的全局 `teakfds` 包。
 
+### 全量 API 验证（推荐）
+
+```bash
+cd teak-fds
+python scripts/verify_all_apis.py --strict
+python scripts/verify_all_apis.py --strict --symbol SZ300750,SH600519
+python scripts/verify_capabilities.py
+```
+
+`--strict` 检查字段语义（如 `motion.amount`、`money_flow.main_net`、`consensus_eps.eps`），避免「有返回但全零 / 缺别名」。
+
 ---
 
 ## 3. 一键验证（推荐）

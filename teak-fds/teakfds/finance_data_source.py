@@ -973,7 +973,7 @@ class FinanceDataSource:
         if tu:
             try:
                 ts_code = self._to_ts_code(symbol)
-                indicator = tu.get_fina_indicator(ts_code=ts_code)
+                indicator = tu.get_financial_indicator(ts_code=ts_code)
                 if indicator and not records_empty(indicator):
                     row = indicator[0] if isinstance(indicator, list) else indicator
                     d = {
