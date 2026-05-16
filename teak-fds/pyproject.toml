@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "teakfds"
+version = "0.2.0"
+description = "Teak-FDS: unified financial data skill for AI agents (no akshare dependency)"
+readme = "SKILL.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = [
+    "requests>=2.22.0",
+    "httpx>=0.27.0",
+    "pycryptodome>=3.19.0",
+]
+
+[project.optional-dependencies]
+analytics = ["pandas>=2.0.0", "lxml>=4.2.0"]
+mootdx = ["mootdx>=0.9.0"]
+qlib = ["qlib>=0.9.0"]
+dev = ["pytest>=7.0.0"]
+
+[project.scripts]
+teakfds = "teakfds.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["teakfds*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: live network / credentials required",
+]

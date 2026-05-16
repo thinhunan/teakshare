@@ -1,0 +1,37 @@
+{
+    "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "referer": "https://www.lixinger.com/analytics/index/detail/sz/980092/980092/fundamental/valuation/primary"
+    },
+    "urls": [
+        {
+            "url": "https://www.lixinger.com/api/account/sign-in/by-account",
+            "method": "post",
+            "body": "{\"accountName\": \"YOUR_LIXINGER_ACCOUNT\", \"password\": \"YOUR_LIXINGER_PASSWORD\"}",
+            "desc": "login"
+        },
+        {
+            "url": "https://www.lixinger.com/api/stock/stocks/{Type}/{Market}/{StockCode}/{StockCode}",
+            "method": "get",
+            "desc": "获取股票基本信息"
+        },
+        {
+            "url": "https://www.lixinger.com/api/{Type}/price-metrics/get-price-metrics-chart-info",
+            "method": "post",
+            "body": "{\"stockIds\":[{StockId}],\"granularity\":\"y10\",\"metricsTypes\":[\"mcw\"],\"leftMetricsNames\":[\"pb\"],\"rightMetricsNames\":[\"cp\"]}",
+            "desc": "获取股票PB历史通道和当前值"
+        },
+        {
+            "url": "https://www.lixinger.com/api/company/screener",
+            "method": "post",
+            "body": "{\"areaCode\":\"cn\",\"ranges\":{\"market\":\"a\",\"stockBourseTypes\":[\"sh\",\"sz_gem\",\"sh_sti\",\"sz_mb\",\"sh_mb\",\"bj\",\"sz\"],\"mutualMarkets\":{\"selectedMutualMarkets\":[],\"selectType\":\"include\"},\"multiMarketListedType\":{\"selectedMultiMarketListedTypes\":[],\"selectType\":\"include\"},\"excludeBlacklist\":false,\"excludeDelisted\":false,\"excludeBourseType\":false,\"excludeSpecialTreatment\":false,\"constituentsPerspectiveType\":\"history\",\"specialTreatmentOnly\":false},\"filterList\":[{\"id\":\"pm.pb_wo_gw.y10.cvpos\",\"min\":0,\"max\":0.15,\"value\":\"all\",\"date\":\"latest\"},{\"id\":\"pm.d_pe_ttm.y10.cvpos\",\"min\":0,\"max\":0.15,\"value\":\"all\",\"date\":\"latest\"},{\"id\":\"pm.ps_ttm.y10.cvpos\",\"min\":0,\"max\":0.15,\"value\":\"all\",\"date\":\"latest\"},{\"id\":\"pm.dyr.y10.cvpos\",\"min\":0.8,\"max\":1,\"value\":\"all\",\"date\":\"latest\"}],\"customFilterList\":[],\"industrySource\":\"sw_2021\",\"industryLevel\":\"three\",\"sortName\":\"pm.latest.pb_wo_gw.y10.cvpos\",\"sortOrder\":\"desc\",\"pageIndex\":0,\"pageSize\":100}",
+            "desc": "获取A股股票列表"
+        },
+        {
+            "url": "https://www.lixinger.com/api/company/screener",
+            "method": "post",
+            "body": "{\"areaCode\":\"hk\",\"ranges\":{\"stockBourseTypes\":[],\"mutualMarkets\":{\"selectedMutualMarkets\":[],\"selectType\":\"include\"},\"multiMarketListedType\":{\"selectedMultiMarketListedTypes\":[],\"selectType\":\"include\"},\"excludeBlacklist\":false,\"excludeDelisted\":false,\"excludeBourseType\":false,\"constituentsPerspectiveType\":\"history\"},\"filterList\":[{\"id\":\"pm.pe_ttm.y10.cvpos\",\"min\":0,\"max\":0.2,\"value\":\"all\",\"date\":\"latest\"},{\"id\":\"pm.ps_ttm.y10.cvpos\",\"min\":0,\"max\":0.2,\"value\":\"all\",\"date\":\"latest\"},{\"id\":\"pm.pb.y10.cvpos\",\"min\":0,\"max\":0.2,\"value\":\"all\",\"date\":\"latest\"},{\"id\":\"pm.dyr.y10.cvpos\",\"min\":0.8,\"max\":1,\"value\":\"all\",\"date\":\"latest\"}],\"customFilterList\":[],\"industrySource\":\"hsi\",\"industryLevel\":\"three\",\"sortName\":\"pm.latest.pe_ttm.y10.cvpos\",\"sortOrder\":\"desc\",\"pageIndex\":0,\"pageSize\":100}",
+            "desc": "获取港股股票列表"
+        }
+    ]
+}

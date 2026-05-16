@@ -1,0 +1,9 @@
+# 理杏仁：登录与 cookie（勿提交仓库）
+teakfds/providers/lixinger/cookie.txt
+teakfds/providers/lixinger/settings.json
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
