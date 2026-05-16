@@ -77,7 +77,7 @@
 |------|------|------|
 | symbol, name | str | |
 | pe_ttm, pe_lyr, pb, ps_ttm | float? | |
-| dividend_yield | float? | 股息率 |
+| dividend_yield | float? | 股息率（**小数**，0.0185 = 1.85%） |
 | market_cap | float? | 总市值（**亿**） |
 | source | str | `lixinger` / `tushare` / `xueqiu` |
 
@@ -110,7 +110,7 @@ rows = fds.tushare("daily", ts_code="600519.SH", start_date="20250501", end_date
 | 方法 | 返回 | 元素类型 |
 |------|------|----------|
 | `report_forecast(symbol)` | `list[dict] \| None` | `year`, `eps`, `count` |
-| `consensus_eps(symbol)` | `list[dict] \| None` | `year`, `count`, `min`, `mean`, `max`, `industry_avg` |
+| `consensus_eps(symbol)` | `list[dict] \| None` | `year`, `count`, `min`, `mean`, `max`, `eps`（同 mean）, `industry_avg` |
 | `report_list(...)` | `list[dict] \| None` | 公告型字段（常走巨潮） |
 
 ---

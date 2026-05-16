@@ -23,6 +23,13 @@ from dataclasses import dataclass
 from teakfds.datasource_log import log_info, log_warn, log_error
 
 from teakfds.tushare_table import is_null, records_empty, coerce_tushare_table
+from teakfds.normalize_finance import (
+    call_with_supported_kwargs,
+    dividend_yield_decimal,
+    filter_dividend_rows,
+    normalize_consensus_eps_rows,
+    normalize_money_flow_rows,
+)
 
 from teakfds.models import (
     QuoteData, DepthData, KlineData, IntradayData,
@@ -716,7 +723,10 @@ class FinanceDataSource:
         if use_cache:
             cached = self.cache.get(cache_key)
             if cached:
-                return ValuationData(**cached)
+                val = ValuationData(**cached)
+                if val.dividend_yield is not None:
+                    val.dividend_yield = dividend_yield_decimal(val.dividend_yield)
+                return val
         
         route = self.router.route_valuation(symbol)
         
@@ -728,6 +738,8 @@ class FinanceDataSource:
             try:
                 result = provider.valuation(symbol)
                 if result:
+                    if result.dividend_yield is not None:
+                        result.dividend_yield = dividend_yield_decimal(result.dividend_yield)
                     if use_cache:
                         self.cache.set(cache_key, result.to_dict(),
                                       data_type='valuation', ttl=self.CACHE_TTL['valuation'])
@@ -788,16 +800,22 @@ class FinanceDataSource:
                 log_error(f"FinanceDataSource.search_news error: {e}")
         return None
 
-    def search_report(self, query: str) -> Optional[List[Dict]]:
+    def search_report(self, query: str, count: int = 10) -> Optional[List[Dict]]:
         """搜索研报
 
         Args:
             query: 搜索关键词
+            count: 最多返回条数
         """
         provider = self.get_provider('mx_search')
         if provider:
             try:
-                return provider.search_report(query)
+                rows = call_with_supported_kwargs(
+                    provider.search_report, query=query, count=count
+                )
+                if rows and count and len(rows) > count:
+                    return rows[:count]
+                return rows
             except Exception as e:
                 log_error(f"FinanceDataSource.search_report error: {e}")
         return None
@@ -1282,27 +1300,28 @@ class FinanceDataSource:
                 start_time = time.time()
                 result = None
                 # Tushare provider 使用 get_money_flow；其他 provider 使用 money_flow
-                if provider_name == 'tushare':
-                    try:
-                        result = provider.money_flow(symbol, days=days)
-                    except Exception as e:
-                        log_error(f"Tushare money_flow error: {e}")
-                        result = None
-                    # Tushare：list[dict]
-                    if result is not None and isinstance(result, list) and days:
-                        result = result[:days]
-                elif hasattr(provider, 'money_flow'):
-                    result = provider.money_flow(symbol, days=days)
+                if hasattr(provider, 'money_flow'):
+                    result = call_with_supported_kwargs(
+                        provider.money_flow, symbol=symbol, days=days
+                    )
                 else:
                     continue
 
                 latency = (time.time() - start_time) * 1000
-                # 安全的非空检查：必须是list且不为空
-                if result is not None and isinstance(result, list) and len(result) > 0:
+                normalized = normalize_money_flow_rows(
+                    result, source=provider_name, days=days
+                )
+                if normalized and len(normalized) > 0:
+                    has_signal = any(
+                        abs(float(r.get("main_net") or r.get("net_mf_amount") or 0)) > 1e-6
+                        for r in normalized
+                    )
+                    if not has_signal and provider_name != route.providers[-1]:
+                        continue
                     self.rate_limiter.record_request(provider_name)
                     if isinstance(self.router, SmartRouter):
                         self.router.record_result(provider_name, True, latency)
-                    return result
+                    return normalized
 
             except Exception as e:
                 self.rate_limiter.record_failure(provider_name)
@@ -2033,14 +2052,14 @@ class FinanceDataSource:
             return normalized[2:] + '.' + normalized[:2]
         return symbol
 
-    def dividend(self, symbol: str):
+    def dividend(self, symbol: str) -> Optional[List[Dict]]:
         """获取分红送股数据 (Tushare)
 
         Args:
             symbol: 股票代码
 
         Returns:
-            DataFrame: ts_code, end_date, ann_date, div_proc, stk_div, cash_div 等
+            list[dict]: 仅含 cash_div>0 或 stk_div>0 的有效分红记录
         """
         symbol = self._resolve_symbol(symbol)
         provider = self.get_provider('tushare')
@@ -2048,7 +2067,9 @@ class FinanceDataSource:
             return None
         try:
             ts_code = provider.normalize_code(symbol)
-            return provider.pro_call('dividend', ts_code=ts_code)
+            raw = provider.pro_call('dividend', ts_code=ts_code)
+            rows = coerce_tushare_table(raw)
+            return filter_dividend_rows(rows)
         except Exception as e:
             log_error(f"FinanceDataSource.dividend error: {e}")
         return None
@@ -2432,7 +2453,8 @@ class FinanceDataSource:
         provider = self.get_provider('aggregate')
         if provider:
             try:
-                return provider.consensus_eps(symbol)
+                rows = provider.consensus_eps(symbol)
+                return normalize_consensus_eps_rows(rows)
             except Exception as e:
                 log_error(f"FinanceDataSource.consensus_eps error: {e}")
         return None

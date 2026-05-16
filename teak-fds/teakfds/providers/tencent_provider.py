@@ -779,19 +779,23 @@ class TencentProvider(BaseProvider):
 
     # ========== 资金流向 (ff_ 前缀) ==========
 
-    def money_flow(self, symbol: str) -> Optional[Dict[str, Any]]:
+    def money_flow(
+        self, symbol: str, days: int = 30, **kwargs: Any
+    ) -> Optional[List[Dict[str, Any]]]:
         """
         获取资金流向 (Tencent ff_ 前缀)
 
         Note: ff_ 前缀对A股不可用，仅对部分市场有效。
-        A股资金流向请使用 tushare/mx_data/xueqiu 数据源。
+        A股资金流向请使用 tushare/baidu/mx_data/xueqiu 数据源。
 
         Args:
             symbol: 股票代码
+            days: 兼容门面参数（A 股场景返回 None 以触发 fallback）
 
         Returns:
-            dict with main_inflow, main_outflow, main_net, etc. or None
+            list[dict] 或 None（A 股通常 None）
         """
+        _ = days, kwargs
         try:
             qt_symbol = self._convert_symbol(symbol)
             ff_symbol = f"ff_{qt_symbol}"
@@ -819,7 +823,7 @@ class TencentProvider(BaseProvider):
                 except (ValueError, IndexError):
                     return 0
 
-            result = {
+            snap = {
                 'symbol': symbol,
                 'main_inflow': _safe_float(2),
                 'main_outflow': _safe_float(3),
@@ -830,7 +834,10 @@ class TencentProvider(BaseProvider):
                 'total_amount': _safe_float(12),
                 'source': self.name,
             }
-            return result
+            if not snap.get('main_net') and not snap.get('main_inflow'):
+                return None
+            from teakfds.normalize_finance import normalize_money_flow_rows
+            return normalize_money_flow_rows([snap], source=self.name, days=days)
 
         except Exception as e:
             print(f"TencentProvider.money_flow error: {e}")

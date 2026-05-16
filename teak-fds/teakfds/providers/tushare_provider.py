@@ -900,7 +900,11 @@ class TushareProvider(BaseProvider):
                 pe_lyr=float(row.get('pe', 0)) if not is_null(row.get('pe')) else None,
                 pb=float(row.get('pb', 0)) if not is_null(row.get('pb')) else None,
                 ps_ttm=float(row.get('ps', 0)) if not is_null(row.get('ps')) else None,
-                dividend_yield=float(row.get('dv_ttm', 0)) if not is_null(row.get('dv_ttm')) else None,
+                dividend_yield=(
+                    float(row.get('dv_ttm', 0)) / 100.0
+                    if not is_null(row.get('dv_ttm')) and float(row.get('dv_ttm', 0)) > 0.2
+                    else (float(row.get('dv_ttm', 0)) if not is_null(row.get('dv_ttm')) else None)
+                ),
                 market_cap=float(row.get('total_mv', 0)) / 10000 if not is_null(row.get('total_mv')) else None,  # 万元->亿元
                 source='tushare'
             )
@@ -909,11 +913,16 @@ class TushareProvider(BaseProvider):
             return None
 
     def money_flow(self, symbol: str, days: int = 30):
-        """获取资金流向 - 统一接口"""
+        """获取资金流向 - 统一接口（list[dict]，含 main_net）"""
+        from teakfds.normalize_finance import normalize_money_flow_rows
+        from teakfds.tushare_table import coerce_tushare_table
+
         ts_code = self.normalize_code(symbol)
         end_date = datetime.now().strftime('%Y%m%d')
-        start_date = (datetime.now() - timedelta(days=days)).strftime('%Y%m%d')
-        return self.get_money_flow(ts_code, start_date, end_date)
+        start_date = (datetime.now() - timedelta(days=days * 2)).strftime('%Y%m%d')
+        raw = self.get_money_flow(ts_code, start_date, end_date)
+        rows = coerce_tushare_table(raw)
+        return normalize_money_flow_rows(rows, source=self.name, days=days)
 
     # ========== 逃生舱功能 ==========
 

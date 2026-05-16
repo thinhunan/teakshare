@@ -265,12 +265,13 @@ class MXSearchProvider(BaseProvider):
         
         return self._parse_search_result(result, SearchType.NEWS)
     
-    def search_report(self, query: str) -> List[Dict[str, Any]]:
+    def search_report(self, query: str, count: int = 10) -> List[Dict[str, Any]]:
         """
         搜索研报
         
         Args:
             query: 搜索关键词（股票代码或公司名称）
+            count: 最多返回条数
         
         Returns:
             研报列表
@@ -281,7 +282,10 @@ class MXSearchProvider(BaseProvider):
         if not result:
             return []
         
-        return self._parse_search_result(result, SearchType.REPORT)
+        rows = self._parse_search_result(result, SearchType.REPORT)
+        if count and len(rows) > count:
+            return rows[:count]
+        return rows
     
     def search_announcement(self, query: str, days: int = 30) -> List[Dict[str, Any]]:
         """

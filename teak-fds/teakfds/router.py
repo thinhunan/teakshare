@@ -111,7 +111,8 @@ class Router:
             'us': ['mx_search', 'search_fallback'],
         },
         DataType.MONEY_FLOW: {
-            'a_share': ['tencent', 'tushare', 'mx_data', 'xueqiu', 'baidu'],
+            # 不含 tencent：ff_ 对 A 股无效且 money_flow 无 days 参数
+            'a_share': ['tushare', 'baidu', 'mx_data', 'xueqiu'],
             'hk': [],
             'us': [],
         },

@@ -208,7 +208,8 @@ class FDSCommands:
         CLIOutput.print_kv("PE-LYR", data.pe_lyr)
         CLIOutput.print_kv("PB", data.pb)
         CLIOutput.print_kv("PS-TTM", data.ps_ttm)
-        CLIOutput.print_kv("股息率", data.dividend_yield, "%")
+        dy_pct = data.dividend_yield * 100 if data.dividend_yield is not None else None
+        CLIOutput.print_kv("股息率", dy_pct, "%")
         CLIOutput.print_kv("市值", data.market_cap, "亿")
         return 0
 
@@ -361,23 +362,27 @@ class FDSCommands:
     def dividend(self, symbol: str, json_output: bool = False):
         """获取分红数据"""
         data = self.fds.dividend(symbol)
-        if data is None or (hasattr(data, 'empty') and data.empty):
+        if not data:
             print(f"错误: 无法获取 {symbol} 的分红数据")
             return 1
 
         if json_output:
-            if hasattr(data, 'to_dict'):
-                print(data.to_dict(orient='records'))
-            else:
-                print(CLIOutput.to_json(data))
+            print(CLIOutput.to_json(data))
             return 0
 
         CLIOutput.print_header(f"{symbol} 分红送股")
-        if hasattr(data, 'head'):
-            df = data.head(5)
-            headers = list(df.columns)[:6]
-            rows = df[headers].values.tolist()
-            CLIOutput.print_table(headers, rows)
+        headers = ["报告期", "公告日", "进度", "每股分红", "送股"]
+        rows = [
+            [
+                d.get("end_date"),
+                d.get("ann_date"),
+                d.get("div_proc"),
+                d.get("cash_div"),
+                d.get("stk_div"),
+            ]
+            for d in data[:10]
+        ]
+        CLIOutput.print_table(headers, rows)
         return 0
 
     # ========== 财务命令 ==========
@@ -479,9 +484,17 @@ class FDSCommands:
             return 0
 
         CLIOutput.print_header(f"{symbol} 资金流向 (最近{days}天)")
-        headers = ["日期", "主力净流入", "超大单净流入", "大单净流入", "中单净流入", "小单净流入"]
-        rows = [[d.get('trade_date'), d.get('buy_lg_amount'), d.get('buy_elg_vol'),
-                 d.get('buy_lg_vol'), d.get('buy_md_vol'), d.get('buy_sm_vol')] for d in data]
+        headers = ["日期", "主力净流入", "涨跌幅%", "超大单", "大单"]
+        rows = [
+            [
+                d.get("trade_date") or d.get("date"),
+                d.get("main_net", d.get("net_mf_amount")),
+                d.get("change_pct"),
+                d.get("buy_elg_amount", d.get("superNetIn")),
+                d.get("buy_lg_amount", d.get("largeNetIn")),
+            ]
+            for d in data
+        ]
         CLIOutput.print_table(headers, rows)
         return 0
 
@@ -703,7 +716,10 @@ class FDSCommands:
 
         CLIOutput.print_header(f"{symbol} 机构一致预期 EPS")
         headers = ["年度", "机构数", "最小值", "均值", "最大值"]
-        rows = [[d["year"], d["count"], d["min"], d["mean"], d["max"]] for d in data]
+        rows = [
+            [d["year"], d["count"], d.get("min"), d.get("mean", d.get("eps")), d.get("max")]
+            for d in data
+        ]
         CLIOutput.print_table(headers, rows, precision=4)
         return 0
 

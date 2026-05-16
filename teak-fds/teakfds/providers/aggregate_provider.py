@@ -23,6 +23,7 @@ from teakfds.integrations.eastmoney_gsrl import fetch_company_events_em
 from teakfds.integrations.eastmoney_industry import fetch_industry_board_summary
 from teakfds.integrations.eastmoney_notice import fetch_notice_report
 from teakfds.integrations.ths_forecast_lite import fetch_consensus_eps_ths
+from teakfds.normalize_finance import consensus_eps_has_signal, normalize_consensus_eps_rows
 from teakfds.providers.base_provider import BaseProvider, ProviderCapabilities
 from teakfds.models import ProviderStatus
 
@@ -191,23 +192,29 @@ class AggregateProvider(BaseProvider):
 
     def consensus_eps(self, symbol: str) -> Optional[List[Dict]]:
         self._wait_rate_limit()
-        rows = fetch_consensus_eps_ths(symbol)
-        if rows:
+        rows = normalize_consensus_eps_rows(fetch_consensus_eps_ths(symbol))
+        if consensus_eps_has_signal(rows):
             return rows
         pf = fetch_profit_forecast_em(symbol)
         if not pf:
-            return None
-        return [
-            {
-                "year": str(r.get("year", "")),
-                "count": int(r.get("count", 0) or 0),
-                "min": r.get("min"),
-                "mean": r.get("eps"),
-                "max": r.get("max"),
-            }
-            for r in pf
-            if r.get("year") or r.get("eps")
-        ]
+            return rows
+        em_rows = normalize_consensus_eps_rows(
+            [
+                {
+                    "year": str(r.get("year", "")),
+                    "count": int(r.get("count", 0) or 0),
+                    "min": r.get("min"),
+                    "mean": r.get("eps"),
+                    "max": r.get("max"),
+                    "eps": r.get("eps"),
+                }
+                for r in pf
+                if r.get("year") or r.get("eps")
+            ]
+        )
+        if consensus_eps_has_signal(em_rows):
+            return em_rows
+        return rows or em_rows
 
 
 _aggregate_provider: Optional[AggregateProvider] = None

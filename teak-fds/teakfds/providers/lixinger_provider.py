@@ -188,7 +188,11 @@ class LixingerProvider(BaseProvider):
                 pe_lyr=info.d_pe_ttm if info.d_pe_ttm else None,  # 扣非PE
                 pb=info.pb if info.pb else None,
                 ps_ttm=info.ps_ttm if info.ps_ttm else None,
-                dividend_yield=info.dividend_yield if info.dividend_yield else None,
+                dividend_yield=(
+                    (info.dividend_yield / 100.0)
+                    if info.dividend_yield and abs(info.dividend_yield) > 0.2
+                    else info.dividend_yield
+                ) if info.dividend_yield else None,
                 market_cap=market_cap,
                 source='lixinger',
                 update_time=datetime.now().isoformat()

@@ -1,6 +1,7 @@
 ---
 name: teak-fds
-description: Teak-FDS（teakfds）统一金融数据源：A/H/美股行情、K线、估值与分位（理杏仁）、财务/宏观（Tushare HTTP）、公告研报、妙想搜索、北向等。当用户需要股票/指数金融数据时使用。必须经 TeakFDS 或 CLI 调用，禁止直接 import tushare 或 akshare。
+description: >-
+  Teak-FDS（teakfds）统一金融数据源：A/H/美股行情、K线、估值与分位（理杏仁）、财务/宏观（Tushare HTTP）、公告研报、妙想搜索、北向等。当用户需要股票/指数金融数据时使用。必须经 TeakFDS 或 CLI 调用，禁止直接 import tushare 或 akshare。
 ---
 
 # Teak-FDS

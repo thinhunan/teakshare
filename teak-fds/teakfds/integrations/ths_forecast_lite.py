@@ -72,9 +72,14 @@ def fetch_consensus_eps_ths(
     out: List[Dict[str, Any]] = []
     for _, row in df.iterrows():
         try:
+            try:
+                year_s = str(int(float(row.get("年度", ""))))
+            except (TypeError, ValueError):
+                year_s = str(row.get("年度", "")).strip()
             out.append(
                 {
-                    "year": str(row.get("年度", "")),
+                    "year": year_s,
+                    "eps": float(row.get("均值", 0) or 0),
                     "count": int(row.get("预测机构数", 0) or 0),
                     "min": float(row.get("最小值", 0) or 0),
                     "mean": float(row.get("均值", 0) or 0),
