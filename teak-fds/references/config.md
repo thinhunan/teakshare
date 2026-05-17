@@ -14,7 +14,14 @@ Teak-FDS **自包含**，凭证与配置文件均放在本技能目录或 `~/age
 
 - Cookie 文本：`~/agents_documents/xueqiu_cookies.txt`（浏览器导出或一行 Cookie 头）
 
-实现：`teakfds/xueqiu_client.py` → `XueqiuClient`。
+实现：`teakfds/credentials.py` → `xueqiu_cookies_path()`；`teakfds/xueqiu_client.py` → `XueqiuClient`。
+
+## 问财（iwencai）
+
+- Cookie 文本：`~/agents_documents/IWENCAI_API_KEY.txt`（浏览器访问 iwencai.com 后导出 Cookie 头，整段粘贴）
+- 依赖：`pip install -e ".[iwencai]"`（`pywencai` + `pandas` + `fake-useragent`）及本机 **Node.js**（pywencai 生成 `hexin-v` token）
+
+实现：`teakfds/providers/iwencai_provider.py`，调用 `pywencai.get(..., cookie=...)`。
 
 ## 妙想（MX）
 

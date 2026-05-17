@@ -211,7 +211,9 @@ teakfds health
 | `fund_flow_baidu` | 百度 API 变更时可能为空 |
 | `report_rating` | 单股走东财研报；全市场走巨潮按日列表 |
 | `consensus_eps` | 同花顺 worth 页；建议 `pip install -e ".[analytics]"` |
-| `iwencai` | 需本机 Node + pywencai 环境 |
+| `iwencai` | `pip install -e ".[iwencai]"` + Node.js + `~/agents_documents/IWENCAI_API_KEY.txt` |
+| `minute_kline` / `watchlist_stocks` 等 | `~/agents_documents/xueqiu_cookies.txt` |
+| `tick_data` | mootdx，验证中为可选 skip |
 
 ---
 

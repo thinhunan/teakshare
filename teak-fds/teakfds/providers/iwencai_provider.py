@@ -30,6 +30,13 @@ except ImportError:
     _PYWENCAI_AVAILABLE = False
     pywencai = None
 
+try:
+    import pandas as pd
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None
+    _PANDAS_AVAILABLE = False
+
 
 class IwencaiProvider(BaseProvider):
     """
@@ -55,11 +62,26 @@ class IwencaiProvider(BaseProvider):
 
     def __init__(self):
         super().__init__()
-        self._available = _PYWENCAI_AVAILABLE
+        self._available = _PYWENCAI_AVAILABLE and _PANDAS_AVAILABLE
         self._last_request_time = 0
+        self._cookie: Optional[str] = None
+
+    def _get_cookie(self) -> Optional[str]:
+        if self._cookie is not None:
+            return self._cookie or None
+        from teakfds.credentials import load_iwencai_cookie
+
+        self._cookie = load_iwencai_cookie() or ""
+        return self._cookie or None
 
     def is_available(self) -> bool:
-        return _PYWENCAI_AVAILABLE
+        if not (_PYWENCAI_AVAILABLE and _PANDAS_AVAILABLE):
+            return False
+        import shutil
+
+        if not shutil.which("node"):
+            return False
+        return True
 
     def get_status(self) -> ProviderStatus:
         return ProviderStatus(
@@ -99,7 +121,8 @@ class IwencaiProvider(BaseProvider):
             self._wait_rate_limit()
 
             t0 = time.perf_counter()
-            df = pywencai.get(query=q, **kwargs)
+            cookie = kwargs.pop("cookie", None) or self._get_cookie()
+            df = pywencai.get(query=q, cookie=cookie, **kwargs)
             elapsed = (time.perf_counter() - t0) * 1000
 
             log_external_request(

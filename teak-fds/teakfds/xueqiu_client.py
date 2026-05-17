@@ -2,7 +2,7 @@
 雪球 API 客户端 — 统一 cookies 注入、错误处理。
 
 所有 API 请求均自动从 cookies 文件加载 Cookie。
-cookies 文件 ~/agents_documents/xueqiu_cookies.txt
+路径见 ``teakfds.credentials.xueqiu_cookies_path()``（默认 ``~/agents_documents/xueqiu_cookies.txt``）。
 """
 from __future__ import annotations
 
@@ -35,11 +35,11 @@ class XueqiuRequestError(RuntimeError):
 
 # ── Cookies helpers ─────────────────────────────────────────
 
-DEFAULT_COOKIES_TXT = Path.home() / "agents_documents" / "xueqiu_cookies.txt"
-
-
 def resolve_cookies_path(skill_root: Path) -> Path:
-    return DEFAULT_COOKIES_TXT
+    from teakfds.credentials import xueqiu_cookies_path
+
+    _ = skill_root
+    return xueqiu_cookies_path()
 
 
 def _parse_cookie_kv(header: str) -> Dict[str, str]:
